@@ -13,10 +13,10 @@
 #   --users, -u:
 #     users file
 #
-#  --message, -m:
+#   --message, -m:
 #     message to send
 #
-#  --app, -a:
+#   --app, -a:
 #     app name
 #
 # == Config
