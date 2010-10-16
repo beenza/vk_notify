@@ -54,7 +54,7 @@ API_URI = URI.parse(API_URL)
 class VkNotify
 
   def run
-    parse_arguments
+    configure parse_arguments
     load_vk_apps
     load_app_config
     parse_users_file
@@ -64,12 +64,10 @@ class VkNotify
   private
 
   def load_app_config
-    @app_config = @vk_apps[@app_name]
+    @app_config = @vk_apps[@config[:app]]
     throw "app not found" unless @app_config
-    @api_id = @app_config["api_id"]
-    throw "api_id not specified" unless @api_id
-    @api_secret = @app_config["api_secret"]
-    throw "api_secret not specified" unless @api_secret
+    throw "api_id not specified" unless @app_config["api_id"]
+    throw "api_secret not specified" unless @app_config["api_secret"]
   end
 
   def load_vk_apps
@@ -78,9 +76,9 @@ class VkNotify
 
   def parse_users_file
     @users = []
-    file = File.new @users_file
+    file = File.new @config[:users_file]
     while line = file.gets
-      @users.push line.to_i if line.to_i > 0
+      @users << line.to_i if line.to_i > 0
     end
     file.close
     @users.uniq!
@@ -93,19 +91,19 @@ class VkNotify
       ["--message", "-m", GetoptLong::REQUIRED_ARGUMENT],
       ["--app", "-a", GetoptLong::REQUIRED_ARGUMENT]
     )
-    opts.each do |opt, arg|
-      case opt
-      when "--help"
-        RDoc::usage
-      when "--users"
-        @users_file = arg
-      when "--message"
-        @message = arg
-      when "--app"
-        @app_name = arg
-      end
-    end
-    RDoc::usage unless @message && @users_file && @app_name
+    options = {}
+    opts.each { |key, value| options[key] = value }
+    options
+  end
+
+  def configure(options)
+    RDoc::usage if options["--help"]
+    @config = {
+      :users_file => options["--users"],
+      :message => options["--message"],
+      :app => options["--app"]
+    }
+    RDoc::usage unless @config[:users_file] && @config[:message] && @config[:app]
   end
 
   def send_message
@@ -154,7 +152,7 @@ class VkNotify
       "timestamp" => Time.now.to_i,
       "random" => ((1 << 32) * rand).ceil,
       "uids" => uids * ",",
-      "message" => @message
+      "message" => @config[:message]
     }
     sign_params! params
     params
